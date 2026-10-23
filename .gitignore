@@ -5,7 +5,7 @@
 *.pem
 *.key
 id_rsa
-.github_pat_*
+.github[_]pat_*   # класс [_] — чтобы паттерн не матчил сам себя в сканерах
 credentials.json
 
 # --- зависимости / сборка ---
