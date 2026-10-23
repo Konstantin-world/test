@@ -1,0 +1,33 @@
+# --- secrets (никогда не коммитим) ---
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa
+.github_pat_*
+credentials.json
+
+# --- зависимости / сборка ---
+node_modules/
+dist/
+build/
+out/
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+
+# --- кэш инструментов ---
+.cache/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.turbo/
+.next/
+
+# --- ОС и редакторы ---
+.DS_Store
+Thumbs.db
+.idea/
+*.swp
