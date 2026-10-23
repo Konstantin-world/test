@@ -1,0 +1,78 @@
+{
+  "$schema": "../schema/domains.schema.json",
+  "version": "1.0.0",
+  "domains": [
+    {
+      "id": "working_memory",
+      "order": 1,
+      "name": { "ru": "Рабочая память" },
+      "lifeTask": { "ru": "Держать в голове несколько дел одновременно" },
+      "color": "#4F7CFF",
+      "weight": 1.0,
+      "onboardingAssessed": true
+    },
+    {
+      "id": "episodic_memory",
+      "order": 2,
+      "name": { "ru": "Эпизодическая память" },
+      "lifeTask": { "ru": "Не забывать имена, списки и события" },
+      "color": "#7C5CFF",
+      "weight": 1.0,
+      "onboardingAssessed": false
+    },
+    {
+      "id": "attention",
+      "order": 3,
+      "name": { "ru": "Внимание и концентрация" },
+      "lifeTask": { "ru": "Не отвлекаться и доводить начатое до конца" },
+      "color": "#FF8A4F",
+      "weight": 1.0,
+      "onboardingAssessed": true
+    },
+    {
+      "id": "processing_speed",
+      "order": 4,
+      "name": { "ru": "Скорость обработки" },
+      "lifeTask": { "ru": "Быстрее соображать и успевать" },
+      "color": "#FF5C7A",
+      "weight": 1.0,
+      "onboardingAssessed": true
+    },
+    {
+      "id": "cognitive_flexibility",
+      "order": 5,
+      "name": { "ru": "Гибкость мышления" },
+      "lifeTask": { "ru": "Легко переключаться и адаптироваться" },
+      "color": "#2FBF9B",
+      "weight": 1.0,
+      "onboardingAssessed": false
+    },
+    {
+      "id": "logic",
+      "order": 6,
+      "name": { "ru": "Логика и рассуждение" },
+      "lifeTask": { "ru": "Принимать взвешенные решения" },
+      "color": "#3FA9F5",
+      "weight": 1.0,
+      "onboardingAssessed": true
+    },
+    {
+      "id": "language",
+      "order": 7,
+      "name": { "ru": "Язык и речь" },
+      "lifeTask": { "ru": "Говорить и писать точнее" },
+      "color": "#C0CA33",
+      "weight": 1.0,
+      "onboardingAssessed": false
+    },
+    {
+      "id": "creativity",
+      "order": 8,
+      "name": { "ru": "Креативность и решение проблем" },
+      "lifeTask": { "ru": "Находить нестандартные выходы" },
+      "color": "#E040FB",
+      "weight": 1.0,
+      "onboardingAssessed": false
+    }
+  ]
+}

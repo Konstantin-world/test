@@ -134,6 +134,24 @@ jobs:
           fi
           exit "$HITS"
 
+  content-validation:
+    name: Content catalog valid
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate domains and exercises
+        run: node tools/validate-content.mjs
+        if: hashFiles('tools/validate-content.mjs') != ''
+
+      - name: Skip notice
+        if: hashFiles('tools/validate-content.mjs') == ''
+        run: echo "tools/validate-content.mjs отсутствует — пропускаю"
+
   repo-hygiene:
     name: Repository hygiene
     runs-on: ubuntu-latest

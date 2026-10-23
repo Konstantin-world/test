@@ -1,0 +1,505 @@
+{
+  "$schema": "../schema/exercises.schema.json",
+  "version": "1.0.0",
+  "meta": {
+    "difficultyIndex": {
+      "min": 0.0,
+      "max": 1.0,
+      "description": "Единый скаляр сложности d ∈ [0,1]. Каждый параметр упражнения интерполируется линейно между at0 (легче всего) и at1 (сложнее всего). Это позволяет одному staircase-контроллеру управлять любым упражнением без специфичной логики.",
+      "interpolation": {
+        "int": "round(at0 + (at1 - at0) * d)",
+        "float": "at0 + (at1 - at0) * d",
+        "enum": "values[round(d * (len(values) - 1))]"
+      }
+    },
+    "evidenceScale": {
+      "paradigmValidity": "Насколько сама экспериментальная парадигма признана в когнитивной науке (A — стандарт, B — признана с оговорками, C — классика без строгих современных репликаций).",
+      "transferEvidence": "Насколько доказан перенос тренировки на повседневные задачи (A — мета-аналитическая поддержка, B — смешанные/ограниченные данные, C — доказательств переноса практически нет).",
+      "note": "Разделение намеренное: продукт обещает научную честность, а эти две вещи в литературе регулярно смешивают. Парадигма может быть безупречна, а перенос — недоказан."
+    }
+  },
+  "exercises": [
+    {
+      "id": "dual_n_back",
+      "domain": "working_memory",
+      "mvp": true,
+      "name": { "ru": "Двойной N-back" },
+      "tagline": { "ru": "Визуальный и звуковой поток одновременно" },
+      "description": {
+        "ru": "Квадрат подсвечивается на сетке 3×3, одновременно произносится буква. Нужно отметить, совпадает ли текущая позиция с позицией N шагов назад и совпадает ли звук со звуком N шагов назад. Оба потока независимы."
+      },
+      "science": {
+        "paradigm": "dual n-back (Jaeggi et al., 2008)",
+        "paradigmValidity": "A",
+        "transferEvidence": "B",
+        "notes": "Самая цитируемая парадигма тренировки рабочей памяти. Эффект на fluid intelligence оспаривается: после первоначального ажиотажа мета-анализы показывают слабое влияние на широкий перенос. Внутризадачное улучшение стабильно."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "n", "type": "int", "at0": 1, "at1": 4, "desc": "Глубина — сколько шагов назад сравнивать" },
+          { "key": "stimulusMs", "type": "int", "at0": 3000, "at1": 1500, "desc": "Длительность показа стимула" },
+          { "key": "gapMs", "type": "int", "at0": 500, "at1": 200, "desc": "Пауза между стимулами" },
+          { "key": "targetRate", "type": "float", "at0": 0.3, "at1": 0.18, "desc": "Доля целевых совпадений. Меньше целей — труднее удерживать внимание" }
+        ]
+      },
+      "trial": { "perBlock": 20, "blocksPerSession": 3 },
+      "metrics": ["accuracy", "reactionTimeMs", "dPrime", "level", "omissions"],
+      "input": ["touch"],
+      "requiresAudio": true,
+      "durationSec": 180,
+      "openIssues": ["Нужен русскоязычный набор слогов для звукового потока, сбалансированный по различимости (не «б/п/м» подряд)."]
+    },
+    {
+      "id": "matrix_recall",
+      "domain": "working_memory",
+      "mvp": true,
+      "name": { "ru": "Матрица памяти" },
+      "tagline": { "ru": "Запомни узор и воспроизведи его" },
+      "description": {
+        "ru": "На несколько секунд показывается сетка с подсвеченными ячейками, затем сетка гаснет и нужно воспроизвести узор по памяти."
+      },
+      "science": {
+        "paradigm": "visuospatial span / Corsi block-tapping",
+        "paradigmValidity": "A",
+        "transferEvidence": "B",
+        "notes": "Классическая задача на зрительно-пространственную рабочую память, аналог Corsi-теста."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "gridSize", "type": "int", "at0": 3, "at1": 5, "desc": "Размер сетки (3×3 → 5×5)" },
+          { "key": "highlightCount", "type": "int", "at0": 3, "at1": 7, "desc": "Число подсвеченных ячеек" },
+          { "key": "presentationMs", "type": "int", "at0": 3000, "at1": 1000, "desc": "Время показа узора" },
+          { "key": "orderMatters", "type": "enum", "values": [false, true], "desc": "Учитывать ли порядок ячеек" }
+        ]
+      },
+      "trial": { "perBlock": 12, "blocksPerSession": 2 },
+      "metrics": ["accuracy", "reactionTimeMs", "span", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 120,
+      "openIssues": []
+    },
+    {
+      "id": "memory_match",
+      "domain": "episodic_memory",
+      "mvp": true,
+      "name": { "ru": "Найди пару" },
+      "tagline": { "ru": "Классический «Меморин» с адаптивным временем" },
+      "description": {
+        "ru": "Карточки лежат рубашкой вверх. Открываешь две — если совпали, остаются открытыми. Задача — открыть все пары за минимум ходов."
+      },
+      "science": {
+        "paradigm": "concentration / memory match",
+        "paradigmValidity": "C",
+        "transferEvidence": "C",
+        "notes": "Честно: доказательств переноса почти нет. Ценность — в вовлечении и низкопороговом входе. В спеке заявлена как упражнение на эпизодическую память, но строго она тренирует зрительно-пространственный буфер, а не эпизодическую память. Переименование домена или пересмотр задачи — см. open-questions."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "pairs", "type": "int", "at0": 6, "at1": 12, "desc": "Число пар карточек" },
+          { "key": "peekMs", "type": "int", "at0": 3000, "at1": 800, "desc": "Время предварительного показа всех карточек" },
+          { "key": "flipBackMs", "type": "int", "at0": 1500, "at1": 500, "desc": "Как долго непо совпавшая пара остаётся открытой" },
+          { "key": "visualSimilarity", "type": "enum", "values": ["distinct", "similar_palette", "near_identical"], "desc": "Насколько изображения похожи друг на друга" }
+        ]
+      },
+      "trial": { "perBlock": 1, "blocksPerSession": 1 },
+      "metrics": ["moves", "accuracy", "completionSec", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 150,
+      "openIssues": ["Домен «эпизодическая память» заявлен, но упражнение его не закрывает. Нужны «Истории» или интервальное повторение — см. open-questions.md №4."]
+    },
+    {
+      "id": "story_recall",
+      "domain": "episodic_memory",
+      "mvp": false,
+      "name": { "ru": "Истории" },
+      "tagline": { "ru": "Прочитай рассказ и ответь на вопросы по нему" },
+      "description": {
+        "ru": "Короткий текст на 60–90 секунд, затем закрытый текст и 5–8 вопросов на детали, порядок событий и причинно-следственные связи."
+      },
+      "science": {
+        "paradigm": "story recall / logical memory (WMS)",
+        "paradigmValidity": "A",
+        "transferEvidence": "B",
+        "notes": "Субтест логической памяти из Wechsler Memory Scale — действительно валидный инструмент для эпизодической памяти."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "textWordCount", "type": "int", "at0": 60, "at1": 180, "desc": "Объём текста" },
+          { "key": "exposureSec", "type": "int", "at0": 90, "at1": 40, "desc": "Время на чтение" },
+          { "key": "delaySec", "type": "int", "at0": 0, "at1": 120, "desc": "Задержка перед вопросами (отсроченное воспроизведение)" },
+          { "key": "questionCount", "type": "int", "at0": 5, "at1": 8, "desc": "Число вопросов" }
+        ]
+      },
+      "trial": { "perBlock": 1, "blocksPerSession": 2 },
+      "metrics": ["accuracy", "immediateRecall", "delayedRecall", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 300,
+      "openIssues": ["Нужен корпус текстов (минимум 30–40 штук, чтобы не повторялись). Это работа контент-команды, не инженерная."]
+    },
+    {
+      "id": "schulte_table",
+      "domain": "attention",
+      "mvp": true,
+      "name": { "ru": "Таблицы Шульте" },
+      "tagline": { "ru": "Найди все числа по порядку на время" },
+      "description": {
+        "ru": "Квадратная таблица со случайно расставленными числами. Нужно находить их по порядку, фиксируя взгляд в центре — классическая методика расширения поля зрения и тренировки концентрации."
+      },
+      "science": {
+        "paradigm": "Schulte table / visual search",
+        "paradigmValidity": "B",
+        "transferEvidence": "C",
+        "notes": "Широко используется в русскоязычной практике и у водителей/пилотов, но строгих современных РКИ по переносу мало. Как задача на визуальный поиск — полностью валидна."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "gridSize", "type": "int", "at0": 3, "at1": 6, "desc": "Размер таблицы (3×3 → 6×6)" },
+          { "key": "numberSet", "type": "enum", "values": ["sequential_1_n", "shuffled_ranges", "letters_and_digits"], "desc": "Тип содержимого ячеек" },
+          { "key": "fontJitter", "type": "float", "at0": 0.0, "at1": 0.6, "desc": "Разброс размера и наклона символов" },
+          { "key": "contrast", "type": "float", "at0": 1.0, "at1": 0.55, "desc": "Контрастность символов (ниже — труднее)" }
+        ]
+      },
+      "trial": { "perBlock": 3, "blocksPerSession": 2 },
+      "metrics": ["completionSec", "fixationErrors", "regressions", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 120,
+      "openIssues": ["Метрика «фиксация взгляда в центре» без фронтальной камеры непроверяема. Либо требуем камеру (тяжёлое разрешение, противоречит принципу «минимум разрешений»), либо не измеряем."]
+    },
+    {
+      "id": "stroop_test",
+      "domain": "attention",
+      "mvp": true,
+      "name": { "ru": "Тест Струпа" },
+      "tagline": { "ru": "Назови цвет, а не слово" },
+      "description": {
+        "ru": "Слово-название цвета написано чернилами другого цвета. Нужно выбрать ЦВЕТ, подавляя автоматическое чтение. Классическая задача на когнитивный контроль и интерференцию."
+      },
+      "science": {
+        "paradigm": "Stroop interference task (Stroop, 1935)",
+        "paradigmValidity": "A",
+        "transferEvidence": "B",
+        "notes": "Одна из самых реплицируемых парадигм в когнитивной психологии. Как тренировка — эффект на исполнительный контроль умеренный и зависит от схемы."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "incongruentRate", "type": "float", "at0": 0.25, "at1": 0.6, "desc": "Доля конфликтных проб (цвет ≠ слово)" },
+          { "key": "responseWindowMs", "type": "int", "at0": 2500, "at1": 900, "desc": "Окно на ответ" },
+          { "key": "colorCount", "type": "int", "at0": 3, "at1": 6, "desc": "Число цветов в наборе" },
+          { "key": "interference", "type": "enum", "values": ["color_word", "color_word_position", "color_word_position_emotion"], "desc": "Тип и число конкурирующих признаков" }
+        ]
+      },
+      "trial": { "perBlock": 24, "blocksPerSession": 2 },
+      "metrics": ["accuracy", "reactionTimeMs", "stroopEffectMs", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 150,
+      "openIssues": ["Нужен дальтоник-безопасный палитра: при дейтеранопии красный/зелёный неразличимы. Обязательно проверять контраст по WCAG и давать альтернативную палитру."]
+    },
+    {
+      "id": "reaction_field",
+      "domain": "processing_speed",
+      "mvp": true,
+      "name": { "ru": "Поле реакции" },
+      "tagline": { "ru": "Успей нажать на цель раньше, чем она исчезнет" },
+      "description": {
+        "ru": "В поле случайно появляются цели и дистракторы. Нужно реагировать только на цели, максимально быстро и точно."
+      },
+      "science": {
+        "paradigm": "useful field of view / speed of processing (UFOV)",
+        "paradigmValidity": "A",
+        "transferEvidence": "A",
+        "notes": "Самая сильная доказательная база среди всех когнитивных тренировок: ACTIVE trial (Ball et al., 2002) показал перенос на повседневные задачи, а тренировка скорости обработки — единственный вид когнитивного тренинга, где есть данные о снижении риска деменции (Edwards et al., 2017)."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "stimulusMs", "type": "int", "at0": 1200, "at1": 350, "desc": "Время жизни цели" },
+          { "key": "fieldCells", "type": "int", "at0": 16, "at1": 36, "desc": "Размер поля (4×4 → 6×6)" },
+          { "key": "simultaneousTargets", "type": "int", "at0": 1, "at1": 4, "desc": "Сколько целей активно одновременно" },
+          { "key": "distractorRate", "type": "float", "at0": 0.0, "at1": 0.4, "desc": "Доля дистракторов, на которые реагировать нельзя" }
+        ]
+      },
+      "trial": { "perBlock": 30, "blocksPerSession": 2 },
+      "metrics": ["accuracy", "reactionTimeMs", "misses", "falseAlarms", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 150,
+      "openIssues": []
+    },
+    {
+      "id": "rapid_count",
+      "domain": "processing_speed",
+      "mvp": false,
+      "name": { "ru": "Быстрый счёт" },
+      "tagline": { "ru": "Реши примеры на скорость" },
+      "description": {
+        "ru": "Поток простых арифметических примеров с ограничением времени на ответ."
+      },
+      "science": {
+        "paradigm": "timed mental arithmetic",
+        "paradigmValidity": "B",
+        "transferEvidence": "B",
+        "notes": "Тренирует беглость вычислений, перенос на общий интеллект не показан."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "maxOperand", "type": "int", "at0": 10, "at1": 99, "desc": "Максимальное значение операнда" },
+          { "key": "operations", "type": "enum", "values": ["add", "add_sub", "add_sub_mul", "add_sub_mul_div"], "desc": "Набор операций" },
+          { "key": "timeLimitMs", "type": "int", "at0": 5000, "at1": 1500, "desc": "Время на пример" }
+        ]
+      },
+      "trial": { "perBlock": 20, "blocksPerSession": 2 },
+      "metrics": ["accuracy", "reactionTimeMs", "throughput", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 120,
+      "openIssues": []
+    },
+    {
+      "id": "task_switching",
+      "domain": "cognitive_flexibility",
+      "mvp": true,
+      "name": { "ru": "Переключение правил" },
+      "tagline": { "ru": "Один стимул — два разных правила ответа" },
+      "description": {
+        "ru": "Показывается стимул (например, цифра и буква). По сигналу нужно отвечать то по одному правилу (чётная/нечётная), то по другому (гласная/согласная). Правила переключаются непредсказуемо."
+      },
+      "science": {
+        "paradigm": "task-switching / Wisconsin-like set-shifting",
+        "paradigmValidity": "A",
+        "transferEvidence": "B",
+        "notes": "Switch cost — устойчивый и хорошо измеряемый феномен. Тренируемость переключения показана, широкий перенос на исполнительные функции — под вопросом."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "switchRate", "type": "float", "at0": 0.2, "at1": 0.5, "desc": "Доля проб со сменой правила" },
+          { "key": "ruleCount", "type": "int", "at0": 2, "at1": 3, "desc": "Число правил" },
+          { "key": "cueDurationMs", "type": "int", "at0": 1500, "at1": 400, "desc": "Время показа подсказки о правиле" },
+          { "key": "cueExplicitness", "type": "enum", "values": ["explicit_text", "color_only", "position_only", "no_cue"], "desc": "Насколько явно указано правило" }
+        ]
+      },
+      "trial": { "perBlock": 30, "blocksPerSession": 2 },
+      "metrics": ["accuracy", "reactionTimeMs", "switchCostMs", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 150,
+      "openIssues": ["`switchCostMs` — ключевая метрика домена. Требует минимум 20 проб каждого типа на блок, иначе оценка шумная. Проверить, влезает ли в 150 секунд на высокой сложности."]
+    },
+    {
+      "id": "sudoku",
+      "domain": "logic",
+      "mvp": true,
+      "name": { "ru": "Судоку" },
+      "tagline": { "ru": "От 4×4 для разминки до 9×9 для профи" },
+      "description": {
+        "ru": "Классическая логическая головоломка. Адаптивная сложность меняет размер сетки и число открытых клеток."
+      },
+      "science": {
+        "paradigm": "constraint satisfaction puzzle",
+        "paradigmValidity": "B",
+        "transferEvidence": "C",
+        "notes": "Судоку коррелирует с исполнительными функциями, но причинного переноса от тренировок не показано. Ценность — в вовлечении и долгой игровой сессии."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "gridSize", "type": "enum", "values": [4, 6, 9], "desc": "Размер сетки" },
+          { "key": "givens", "type": "int", "at0": 60, "at1": 22, "desc": "Число заполненных клеток на старте (для 9×9)" },
+          { "key": "techniquesRequired", "type": "enum", "values": ["naked_single", "hidden_single", "pointing_pairs", "advanced"], "desc": "Какие техники нужны для решения" },
+          { "key": "notesAllowed", "type": "enum", "values": ["auto", "manual", "off"], "desc": "Режим пометок-кандидатов" }
+        ]
+      },
+      "trial": { "perBlock": 1, "blocksPerSession": 1 },
+      "metrics": ["completionSec", "errors", "hintsUsed", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 420,
+      "openIssues": ["Генератор судоку должен гарантировать ЕДИНСТВЕННОСТЬ решения. Наивный генератор с выкалыванием клеток может дать несколько решений — нужна проверка решателем (алгоритм DLX / Норvig). Это нетривиальная инженерная задача, не «просто сгенерируй».", "`givens` зависит от `gridSize`: для 4×4 диапазон 8→4, для 9×9 — 40→22. Нужна двумерная интерполяция либо нормализация по доле заполненных клеток."]
+    },
+    {
+      "id": "pattern_finding",
+      "domain": "logic",
+      "mvp": true,
+      "name": { "ru": "Закономерности" },
+      "tagline": { "ru": "Продолжи последовательность" },
+      "description": {
+        "ru": "Последовательность фигур или чисел, где действует скрытое правило. Нужно выбрать правильный следующий элемент из вариантов."
+      },
+      "science": {
+        "paradigm": "Raven-like matrix reasoning",
+        "paradigmValidity": "A",
+        "transferEvidence": "B",
+        "notes": "Прогрессивные матрицы Равена — золотой стандарт измерения fluid intelligence. Как тренировка — перенос оспаривается, но задача валидна как измеритель."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "ruleCount", "type": "int", "at0": 1, "at1": 3, "desc": "Сколько правил действует одновременно" },
+          { "key": "ruleTypes", "type": "enum", "values": ["arithmetic", "arithmetic_geometric", "arithmetic_geometric_spatial"], "desc": "Классы правил" },
+          { "key": "distractorSimilarity", "type": "enum", "values": ["far", "near", "near_plus_partial_rule"], "desc": "Насколько похожи неверные варианты" },
+          { "key": "timeLimitSec", "type": "int", "at0": 60, "at1": 20, "desc": "Время на задачу" }
+        ]
+      },
+      "trial": { "perBlock": 8, "blocksPerSession": 2 },
+      "metrics": ["accuracy", "reactionTimeMs", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 180,
+      "openIssues": ["Генерация задач на «arithmetic_geometric_spatial» с валидными дистракторами — отдельная задача. Проще авторский банк на 200–300 задач с ручной разметкой, чем генератор."]
+    },
+    {
+      "id": "anagrams",
+      "domain": "language",
+      "mvp": true,
+      "name": { "ru": "Анаграммы" },
+      "tagline": { "ru": "Собери слово из перемешанных букв" },
+      "description": {
+        "ru": "Перемешанные буквы русского слова. Нужно собрать исходное слово на время."
+      },
+      "science": {
+        "paradigm": "anagram solving / lexical access",
+        "paradigmValidity": "A",
+        "transferEvidence": "B",
+        "notes": "Задачи на лексический доступ хорошо изучены. Практическая польза для беглости речи правдоподобна, но строгих РКИ именно по тренировке мало."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "wordLength", "type": "int", "at0": 4, "at1": 8, "desc": "Длина слова" },
+          { "key": "corpusFrequency", "type": "enum", "values": ["top_1k", "top_10k", "top_50k", "rare"], "desc": "Частотность слова в корпусе" },
+          { "key": "timeLimitSec", "type": "int", "at0": 60, "at1": 20, "desc": "Время на слово" },
+          { "key": "hintLevel", "type": "enum", "values": ["definition_and_first_letter", "first_letter", "none"], "desc": "Доступность подсказки" }
+        ]
+      },
+      "trial": { "perBlock": 10, "blocksPerSession": 2 },
+      "metrics": ["accuracy", "reactionTimeMs", "solvedCount", "level"],
+      "input": ["keyboard", "touch"],
+      "requiresAudio": false,
+      "durationSec": 180,
+      "openIssues": ["Нужен лицензионно чистый частотный словарь русского языка. Варианты: OpenCorpora (CC BY-SA), словарь Зализняка, частотный список НКРЯ. CC BY-SA накладывает обязательства на производные данные — проверить с юристом до релиза.", "Перестановка букв должна быть «честной»: если из тех же букв собирается другое существующее слово, задача неоднозначна. Нужна проверка по словарю при генерации."]
+    },
+    {
+      "id": "words_from_word",
+      "domain": "language",
+      "mvp": true,
+      "name": { "ru": "Слова из слова" },
+      "tagline": { "ru": "Составь максимум слов из длинного" },
+      "description": {
+        "ru": "Дано длинное слово. Нужно составить из его букв как можно больше коротких слов за отведённое время."
+      },
+      "science": {
+        "paradigm": "verbal fluency / word generation",
+        "paradigmValidity": "A",
+        "transferEvidence": "B",
+        "notes": "Задачи на беглость (verbal fluency) — стандартный нейропсихологический инструмент. Тренировка даёт устойчивый внутризадачный прирост."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "sourceWordLength", "type": "int", "at0": 6, "at1": 11, "desc": "Длина исходного слова" },
+          { "key": "minWordLength", "type": "int", "at0": 3, "at1": 4, "desc": "Минимальная длина принимаемого слова" },
+          { "key": "timeLimitSec", "type": "int", "at0": 180, "at1": 60, "desc": "Время на раунд" },
+          { "key": "corpusFrequency", "type": "enum", "values": ["top_1k", "top_10k", "top_50k"], "desc": "Частотность исходного слова" }
+        ]
+      },
+      "trial": { "perBlock": 3, "blocksPerSession": 1 },
+      "metrics": ["solvedCount", "throughput", "level"],
+      "input": ["keyboard", "touch"],
+      "requiresAudio": false,
+      "durationSec": 200,
+      "openIssues": ["Нужен словарь с пометкой «существительное, именительный падеж, единственное число» — иначе пользователи будут спорить о принятых словах. Спорные случаи ломают доверие к продукту.", "Зависит от того же словаря, что и `anagrams` — делать общий сервис лексики."]
+    },
+    {
+      "id": "alternative_uses",
+      "domain": "creativity",
+      "mvp": true,
+      "name": { "ru": "10 способов использования" },
+      "tagline": { "ru": "Придумай, зачем ещё нужен обычный предмет" },
+      "description": {
+        "ru": "Даётся обычный предмет. Нужно придумать как можно больше нестандартных способов его использования."
+      },
+      "science": {
+        "paradigm": "Alternative Uses Task (Guilford, 1967)",
+        "paradigmValidity": "A",
+        "transferEvidence": "B",
+        "notes": "AUT — стандартный инструмент измерения дивергентного мышления. Валиден как измеритель, но тренируемость креативности через AUT показана умеренно."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "objectFamiliarity", "type": "enum", "values": ["household_common", "tool", "abstract_object"], "desc": "Насколько привычен предмет" },
+          { "key": "requiredCount", "type": "int", "at0": 5, "at1": 12, "desc": "Сколько вариантов нужно дать" },
+          { "key": "timeLimitSec", "type": "int", "at0": 180, "at1": 90, "desc": "Время на раунд" }
+        ]
+      },
+      "trial": { "perBlock": 2, "blocksPerSession": 1 },
+      "metrics": ["fluency", "flexibility", "originality", "level"],
+      "input": ["keyboard", "touch"],
+      "requiresAudio": false,
+      "durationSec": 240,
+      "openIssues": [
+        "КРИТИЧНО: метрики `originality` и `flexibility` требуют ОЦЕНКИ свободного текста. Автоматически это нерешаемо без LLM или ручной модерации.",
+        "Вариант 1 — считать только `fluency` (количество уникальных ответов), а оригинальность не оценивать. Честно, но обедняет метрику.",
+        "Вариант 2 — локальная оценка через эмбеддинги: оригинальность = минимальное косинусное расстояние до других ответов пользователя и до «банальных» ответов из банка. Работает офлайн, но требует модели эмбеддингов на устройстве.",
+        "Вариант 3 — LLM на бэкенде. Ломает offline-first принцип из спеки и добавляет стоимость на каждого пользователя.",
+        "Без решения этого вопроса упражнение невозможно реализовать корректно. См. open-questions.md №1."
+      ]
+    },
+    {
+      "id": "matchstick_puzzles",
+      "domain": "creativity",
+      "mvp": false,
+      "name": { "ru": "Головоломки со спичками" },
+      "tagline": { "ru": "Переложи одну спичку" },
+      "description": {
+        "ru": "Фигура или равенство из спичек. Нужно переложить заданное число спичек, чтобы выполнить условие."
+      },
+      "science": {
+        "paradigm": "matchstick arithmetic / insight problem solving",
+        "paradigmValidity": "A",
+        "transferEvidence": "B",
+        "notes": "Классическая задача на инсайт (Knoblich et al., 1999). Хорошо изучена механизмами «расфиксации» (decomposition)."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "movesAllowed", "type": "int", "at0": 3, "at1": 1, "desc": "Сколько спичек можно переложить (меньше — труднее)" },
+          { "key": "puzzleType", "type": "enum", "values": ["geometric_figure", "arithmetic_equality", "arithmetic_with_removal"], "desc": "Класс головоломки" },
+          { "key": "hintAvailability", "type": "enum", "values": ["full_solution", "direction", "none"], "desc": "Уровень подсказки" }
+        ]
+      },
+      "trial": { "perBlock": 3, "blocksPerSession": 1 },
+      "metrics": ["solved", "movesUsed", "completionSec", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 200,
+      "openIssues": ["Нужен банк головоломок с гарантированно единственным решением. Генератор проверить решателем (полный перебор при малом числе спичек тривиален)."]
+    },
+    {
+      "id": "rsvp_reading",
+      "domain": "language",
+      "mvp": false,
+      "name": { "ru": "RSVP-чтение" },
+      "tagline": { "ru": "Слова мелькают в одной точке — читай без движений глаз" },
+      "description": {
+        "ru": "Текст подаётся по одному слову в фиксированной точке с заданной скоростью (слов/мин), затем вопросы на понимание."
+      },
+      "science": {
+        "paradigm": "rapid serial visual presentation",
+        "paradigmValidity": "A",
+        "transferEvidence": "B",
+        "notes": "RSVP — стандартный лабораторный метод. Важно: «скорочтение» в популярном смысле (600+ сл/мин с сохранением понимания) наукой НЕ подтверждено — понимание падает после ~300 сл/мин. Позиционировать осторожно."
+      },
+      "difficulty": {
+        "params": [
+          { "key": "wpm", "type": "int", "at0": 200, "at1": 450, "desc": "Скорость подачи, слов в минуту" },
+          { "key": "textLengthWords", "type": "int", "at0": 80, "at1": 250, "desc": "Объём отрывка" },
+          { "key": "questionDepth", "type": "enum", "values": ["literal", "inferential", "inferential_and_critique"], "desc": "Уровень вопросов на понимание" }
+        ]
+      },
+      "trial": { "perBlock": 2, "blocksPerSession": 1 },
+      "metrics": ["wpm", "comprehension", "effectiveReadingRate", "level"],
+      "input": ["touch"],
+      "requiresAudio": false,
+      "durationSec": 240,
+      "openIssues": ["МАРКЕТИНГОВЫЙ РИСК: нельзя обещать «скорочтение 1000 слов/мин». Научная позиция — понимание деградирует выше ~300 wpm. Если продукт обещает обратное, это противоречит заявленному принципу научной честности (раздел 9 брифа)."]
+    }
+  ]
+}
