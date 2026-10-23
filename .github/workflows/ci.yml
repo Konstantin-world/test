@@ -1,0 +1,187 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  commit-lint:
+    name: Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine comparison base
+        id: base
+        env:
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [ -n "${PR_BASE:-}" ]; then
+            echo "sha=$PR_BASE" >> "$GITHUB_OUTPUT"
+            echo "base: PR base $PR_BASE"
+          elif [ -n "${BEFORE:-}" ] && [ "$BEFORE" != "0000000000000000000000000000000000000000" ] \
+               && git cat-file -e "$BEFORE" 2>/dev/null; then
+            echo "sha=$BEFORE" >> "$GITHUB_OUTPUT"
+            echo "base: push before $BEFORE"
+          else
+            # первый коммит или force-push: проверяем только HEAD
+            echo "sha=HEAD" >> "$GITHUB_OUTPUT"
+            echo "base: HEAD (первый коммит или force-push)"
+          fi
+
+      - name: Validate commit subjects
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+        run: |
+          set -euo pipefail
+          TYPE='feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
+          PATTERN="^(${TYPE})(\([a-z0-9._/-]+\))?!?: [a-z0-9].{0,71}$"
+
+          if [ "$BASE_SHA" = "HEAD" ]; then
+            RANGE="HEAD~1..HEAD"
+            git rev-parse --verify -q HEAD~1 >/dev/null || RANGE="HEAD"
+          else
+            RANGE="$BASE_SHA..HEAD"
+          fi
+
+          echo "проверяю диапазон: $RANGE"
+          echo
+          FAIL=0
+          COUNT=0
+          while IFS= read -r subject; do
+            COUNT=$((COUNT + 1))
+            if printf '%s' "$subject" | grep -qE "$PATTERN"; then
+              printf '  ok    %s\n' "$subject"
+            else
+              printf '  FAIL  %s\n' "$subject"
+              FAIL=1
+            fi
+          done < <(git log --no-merges --format='%s' "$RANGE")
+
+          echo
+          if [ "$COUNT" -eq 0 ]; then
+            echo "Коммитов в диапазоне нет — нечего проверять."
+          elif [ "$FAIL" -ne 0 ]; then
+            echo "::error::Часть сообщений не соответствует Conventional Commits."
+            echo "Формат: <type>(<scope>): <описание строчными, до 72 символов>"
+            echo "Допустимые type: $TYPE"
+          else
+            echo "Проверено коммитов: $COUNT — все валидны."
+          fi
+          exit "$FAIL"
+
+  secrets-scan:
+    name: No secrets in history
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Scan every revision for credentials
+        run: |
+          set -euo pipefail
+          # Паттерны собраны из частей намеренно: так этот файл не матчит сам себя.
+          # Проверено локально перед коммитом.
+          P_GH='github''_pat_[A-Za-z0-9_]{20,}'
+          P_GHP='ghp_[A-Za-z0-9]{36}'
+          P_GHO='gho_[A-Za-z0-9]{36}'
+          P_GHS='ghs_[A-Za-z0-9]{36}'
+          P_KEY='-----BEGIN [A-Z ]*PRIVATE KEY-----'
+          P_AWS='(A3T[A-Z0-9]|AKIA|ASIA)[A-Z0-9]{16}'
+          # Намеренно НЕ ищем присваивания вида `password = ...`:
+          # на реальном коде это даёт шквал false positive (тесты, доки, примеры).
+          # Оставляем только высоко-сигнальные паттерны.
+
+          PATTERNS="$P_GH|$P_GHP|$P_GHO|$P_GHS|$P_KEY|$P_AWS"
+          HITS=0
+          REV_COUNT=0
+
+          for rev in $(git rev-list --all); do
+            REV_COUNT=$((REV_COUNT + 1))
+            FOUND=$(git grep -IE -e "$PATTERNS" "$rev" -- . 2>/dev/null || true)
+            if [ -n "$FOUND" ]; then
+              # не печатаем найденное значение — только место
+              LOC=$(printf '%s\n' "$FOUND" | sed -E 's/:.*//' | sort -u | head -10)
+              echo "::error::Секрет в коммите ${rev:0:7}"
+              printf '%s\n' "$LOC" | sed 's/^/    /'
+              HITS=1
+            fi
+          done
+
+          echo
+          echo "Просканировано ревизий: $REV_COUNT"
+          if [ "$HITS" -ne 0 ]; then
+            echo "::error::Обнаружены учётные данные в истории."
+            echo "Лечение: git filter-repo + немедленный отзыв токена."
+            echo "Просто удалить файл новым коммитом НЕДОСТАТОЧНО — секрет остаётся в истории."
+          else
+            echo "Секретов не найдено."
+          fi
+          exit "$HITS"
+
+  repo-hygiene:
+    name: Repository hygiene
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Required files present
+        run: |
+          set -euo pipefail
+          FAIL=0
+          for f in README.md .gitignore; do
+            if [ -f "$f" ]; then
+              printf '  ok    %s\n' "$f"
+            else
+              printf '  FAIL  %s отсутствует\n' "$f"
+              FAIL=1
+            fi
+          done
+          exit "$FAIL"
+
+      - name: No large files committed
+        run: |
+          set -euo pipefail
+          LIMIT_KB=1024
+          FAIL=0
+          while IFS= read -r line; do
+            size=$(printf '%s' "$line" | awk '{print $1}')
+            path=$(printf '%s' "$line" | cut -d' ' -f2-)
+            kb=$((size / 1024))
+            if [ "$kb" -gt "$LIMIT_KB" ]; then
+              echo "::error::${path} — ${kb} КБ (лимит ${LIMIT_KB} КБ). Нужен Git LFS."
+              FAIL=1
+            fi
+          done < <(git ls-files -z | xargs -0 du -b 2>/dev/null || true)
+          [ "$FAIL" -eq 0 ] && echo "Файлов крупнее ${LIMIT_KB} КБ нет."
+          exit "$FAIL"
+
+      - name: No trailing whitespace in markdown
+        run: |
+          set -euo pipefail
+          FAIL=0
+          while IFS= read -r f; do
+            # две пробела в конце строки в Markdown — намеренный <br>, их пропускаем
+            if grep -nP '(?<!  )[ \t]+$' "$f" >/dev/null 2>&1; then
+              echo "::warning file=$f::хвостовые пробелы"
+              grep -nP '(?<!  )[ \t]+$' "$f" | head -5 | sed 's/^/    /'
+              FAIL=1
+            fi
+          done < <(git ls-files '*.md')
+          [ "$FAIL" -eq 0 ] && echo "Markdown чист."
+          exit "$FAIL"
