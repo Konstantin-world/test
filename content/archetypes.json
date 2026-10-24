@@ -1,0 +1,409 @@
+{
+  "$schema": "../schema/archetypes.schema.json",
+  "version": "1.0.0",
+  "purpose": "Архетип — это contract между контентом и клиентом: как упражнение предъявляется, какой ввод принимает и как оценивается. 50 упражнений сведены к 14 архетипам, потому что писать 50 отдельных экранов невозможно и неподдерживаем.",
+  "platformRule": {
+    "contentUpdate": "Новое упражнение, использующее СУЩЕСТВУЮЩИЙ архетип, — это обновление контента. Не требует релиза приложения: клиент скачивает JSON и рендерит.",
+    "appRelease": "Новое упражнение, требующее НОВОГО архетипа, — это релиз приложения. Поэтому набор архетипов проектируется с запасом вперёд.",
+    "consequence": "Единственная настоящая платформа здесь — это стабильный набор архетипов. Если он спроектирован плохо, каждое 51-е упражнение будет требовать релиза, и обещание «постоянное дополнение» не выполнится."
+  },
+  "versioning": {
+    "schemaVersion": "Каждый архетип несёт minClientVersion. Клиент, не знающий архетип или его версию, скрывает упражнение, а не падает.",
+    "paramContract": "Параметры сложности объявлены в archetypes[].difficultyParams: контент не может использовать параметр, которого архетип не понимает. Проверяется tools/validate-content.mjs."
+  },
+  "archetypes": [
+    {
+      "id": "single_choice",
+      "name": {
+        "ru": "Выбор одного варианта"
+      },
+      "interaction": "Стимул → N вариантов → один тап. Опциональное окно на ответ.",
+      "renderer": "stimulus + grid of option tiles",
+      "difficultyParams": [
+        "stimulusKind",
+        "optionCount",
+        "responseWindowMs",
+        "distractorSimilarity",
+        "stimulusComplexity"
+      ],
+      "scoring": {
+        "primary": "accuracy",
+        "secondary": [
+          "reactionTimeMs"
+        ]
+      },
+      "staircaseCompatible": true,
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Банк стимулов и дистракторов. Для визуальных задач — генератор или ассеты.",
+      "coversCount": 19
+    },
+    {
+      "id": "multi_choice",
+      "name": {
+        "ru": "Выбор нескольких вариантов"
+      },
+      "interaction": "Стимул → отметить все подходящие → подтвердить.",
+      "renderer": "stimulus + multi-select tiles + confirm button",
+      "difficultyParams": [
+        "stimulusKind",
+        "optionCount",
+        "correctCount",
+        "responseWindowMs",
+        "distractorSimilarity"
+      ],
+      "scoring": {
+        "primary": "accuracy",
+        "secondary": [
+          "reactionTimeMs",
+          "falsePositives"
+        ]
+      },
+      "staircaseCompatible": true,
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Банк стимулов с разметкой «несколько правильных». Требует явного критерия, иначе пользователь спорит с приложением.",
+      "coversCount": 1
+    },
+    {
+      "id": "numeric_input",
+      "name": {
+        "ru": "Ввод числа"
+      },
+      "interaction": "Стимул → цифровой ввод → проверка.",
+      "renderer": "stimulus + numeric keypad",
+      "difficultyParams": [
+        "magnitudeRange",
+        "responseWindowMs",
+        "operationSet",
+        "distractorLoad"
+      ],
+      "scoring": {
+        "primary": "accuracy",
+        "secondary": [
+          "reactionTimeMs",
+          "throughput"
+        ]
+      },
+      "staircaseCompatible": true,
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Генератор. Авторский контент не нужен — это самый масштабируемый архетип.",
+      "coversCount": 5
+    },
+    {
+      "id": "text_input",
+      "name": {
+        "ru": "Ввод слова или текста"
+      },
+      "interaction": "Стимул → текстовый ввод → проверка по словарю или точное совпадение.",
+      "renderer": "stimulus + keyboard input + submit",
+      "difficultyParams": [
+        "corpusFrequency",
+        "wordLength",
+        "responseWindowMs",
+        "hintLevel"
+      ],
+      "scoring": {
+        "primary": "accuracy",
+        "secondary": [
+          "solvedCount",
+          "reactionTimeMs"
+        ]
+      },
+      "staircaseCompatible": true,
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Внешний словарь с пометками части речи и падежа. Лицензия — см. open-questions.md №9.",
+      "coversCount": 3
+    },
+    {
+      "id": "grid_recall",
+      "name": {
+        "ru": "Воспроизведение узора на сетке"
+      },
+      "interaction": "Показ узора → пауза → тап по клеткам.",
+      "renderer": "grid + highlight overlay",
+      "difficultyParams": [
+        "gridSize",
+        "highlightCount",
+        "presentationMs",
+        "delayMs",
+        "orderMatters",
+        "visualSimilarity"
+      ],
+      "scoring": {
+        "primary": "accuracy",
+        "secondary": [
+          "span",
+          "reactionTimeMs"
+        ]
+      },
+      "staircaseCompatible": true,
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Генератор. Полностью алгоритмический.",
+      "coversCount": 2
+    },
+    {
+      "id": "sequence_recall",
+      "name": {
+        "ru": "Воспроизведение последовательности"
+      },
+      "interaction": "Показ порядка → воспроизвести в том же (или обратном) порядке.",
+      "renderer": "grid or list + sequential highlight",
+      "difficultyParams": [
+        "sequenceLength",
+        "presentationMs",
+        "gapMs",
+        "reverseOrder",
+        "stimulusKind",
+        "delayMs"
+      ],
+      "scoring": {
+        "primary": "accuracy",
+        "secondary": [
+          "span",
+          "positionErrors"
+        ]
+      },
+      "staircaseCompatible": true,
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Генератор. Для «снежного кома» — накопительная подача, это отдельная логика предъявления внутри архетипа.",
+      "coversCount": 5
+    },
+    {
+      "id": "continuous_nback",
+      "name": {
+        "ru": "Непрерывный поток с отметкой совпадений"
+      },
+      "interaction": "Поток стимулов → кнопка «совпало» для каждого канала.",
+      "renderer": "stream viewport + per-channel match buttons",
+      "difficultyParams": [
+        "n",
+        "stimulusMs",
+        "gapMs",
+        "targetRate",
+        "channelCount",
+        "stimulusSetSize"
+      ],
+      "scoring": {
+        "primary": "accuracy",
+        "secondary": [
+          "dPrime",
+          "omissions",
+          "falseAlarms",
+          "reactionTimeMs"
+        ]
+      },
+      "staircaseCompatible": true,
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Для слухового канала — сбалансированный набор различимых русских слогов.",
+      "coversCount": 1,
+      "note": "Отдельный архетип, а не вариант timed_field: здесь стимулы идут непрерывно и ответ не привязан к конкретному стимулу, а к сравнению с историей. Метрика dPrime требует фиксации и hits, и false alarms."
+    },
+    {
+      "id": "timed_field",
+      "name": {
+        "ru": "Поле стимулов с реакцией на цели"
+      },
+      "interaction": "Поле с появляющимися целями и дистракторами → тап по целям.",
+      "renderer": "cell field + spawn scheduler",
+      "difficultyParams": [
+        "fieldCells",
+        "stimulusMs",
+        "simultaneousTargets",
+        "distractorRate",
+        "targetSimilarity"
+      ],
+      "scoring": {
+        "primary": "accuracy",
+        "secondary": [
+          "reactionTimeMs",
+          "misses",
+          "falseAlarms"
+        ]
+      },
+      "staircaseCompatible": true,
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Генератор.",
+      "coversCount": 5,
+      "note": "Покрывает и «поиск скрытого символа», и корректурную пробу: различаются targetSimilarity и тем, исчезают ли стимулы."
+    },
+    {
+      "id": "stateful_board",
+      "name": {
+        "ru": "Многоходовая головоломка с состоянием"
+      },
+      "interaction": "Доска, ходы пользователя, проверка решения. Может иметь подсказки.",
+      "renderer": "board + move handler + solution checker",
+      "difficultyParams": [
+        "boardSize",
+        "givens",
+        "movesAllowed",
+        "hintLevel",
+        "techniquesRequired",
+        "timeLimitSec"
+      ],
+      "scoring": {
+        "primary": "solved",
+        "secondary": [
+          "movesUsed",
+          "completionSec",
+          "errors",
+          "hintsUsed",
+          "optimalDelta"
+        ]
+      },
+      "staircaseCompatible": "partial",
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Генератор с ГАРАНТИЕЙ разрешимости и единственности решения. Это самая дорогая часть архетипа.",
+      "coversCount": 11,
+      "note": "staircaseCompatible=partial: успех бинарный (решил/не решил), поэтому лестница работает на подборе уровня задачи, а не на точности внутри блока. Порог оценивается медленнее, нужно больше сессий. Требует отдельного контроллера — см. open-questions.md №18."
+    },
+    {
+      "id": "card_review",
+      "name": {
+        "ru": "Карточки с интервальным повторением"
+      },
+      "interaction": "Карточка → попытка вспомнить → показать ответ → самооценка уверенности.",
+      "renderer": "card flip + self-rating buttons",
+      "difficultyParams": [
+        "cardsPerSession",
+        "easeFloor",
+        "intervalMultiplier",
+        "cardKind"
+      ],
+      "scoring": {
+        "primary": "retention",
+        "secondary": [
+          "recallLatencyMs",
+          "easeFactor"
+        ]
+      },
+      "staircaseCompatible": false,
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Пользовательские или готовые колоды. Требует SM-2 или FSRS.",
+      "coversCount": 2,
+      "note": "staircaseCompatible=false — принципиально. Здесь сложность определяется ease factor КАЖДОЙ КАРТОЧКИ и интервалом, а не глобальным скаляром d. Это другая адаптивная модель, и заставлять её влезать в лестницу Левитта значит сломать обе. Отдельная очередь ревью, отдельный UX (не «сессия», а «долг на сегодня»)."
+    },
+    {
+      "id": "dialog_yesno",
+      "name": {
+        "ru": "Диалог вопросами да/нет"
+      },
+      "interaction": "Сценарий → пользователь задаёт вопросы → система отвечает да/нет/не важно → пользователь даёт разгадку.",
+      "renderer": "scenario card + question input + yes/no feedback",
+      "difficultyParams": [
+        "questionBudget",
+        "scenarioComplexity",
+        "hintLevel",
+        "answerAmbiguity"
+      ],
+      "scoring": {
+        "primary": "solved",
+        "secondary": [
+          "questionsUsed",
+          "efficiency"
+        ]
+      },
+      "staircaseCompatible": "partial",
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Авторские сценарии с размеченным деревом ответов. Очень дорого: каждый сценарий — это мини-сценарий игры.",
+      "coversCount": 1,
+      "note": "Требует либо размеченного дерева ответов на каждый сценарий, либо LLM. Первое — трудоёмко, второе ломает offline-first. См. open-questions.md №19."
+    },
+    {
+      "id": "trace_draw",
+      "name": {
+        "ru": "Рисование или проведение линии"
+      },
+      "interaction": "Непрерывный ввод пальцем/курором, сравнение траектории с эталоном.",
+      "renderer": "canvas + path capture + deviation scoring",
+      "difficultyParams": [
+        "pathComplexity",
+        "speedRequirement",
+        "tolerance",
+        "symmetryAxis",
+        "obstacleDensity"
+      ],
+      "scoring": {
+        "primary": "pathDeviation",
+        "secondary": [
+          "completionSec",
+          "lifts",
+          "symmetryError"
+        ]
+      },
+      "staircaseCompatible": true,
+      "minClientVersion": "1.1.0",
+      "contentNeeds": "Генератор эталонных траекторий.",
+      "coversCount": 2,
+      "note": "minClientVersion 1.1.0: нужен canvas-рендер и захват непрерывного ввода — это отдельная инженерная работа, не «ещё один экран»."
+    },
+    {
+      "id": "passage_qa",
+      "name": {
+        "ru": "Текст с вопросами на понимание"
+      },
+      "interaction": "Чтение отрывка (или RSVP-подача) → вопросы.",
+      "renderer": "text viewport or RSVP ticker + question set",
+      "difficultyParams": [
+        "textLengthWords",
+        "exposureSec",
+        "delaySec",
+        "questionCount",
+        "questionDepth",
+        "wpm"
+      ],
+      "scoring": {
+        "primary": "accuracy",
+        "secondary": [
+          "immediateRecall",
+          "delayedRecall",
+          "effectiveReadingRate"
+        ]
+      },
+      "staircaseCompatible": true,
+      "minClientVersion": "1.0.0",
+      "contentNeeds": "Корпус текстов с вопросами. 30–40 минимум, чтобы не повторялись.",
+      "coversCount": 2
+    }
+  ],
+  "future": [
+    {
+      "id": "rhythm_timing",
+      "name": {
+        "ru": "Ритм-игра: тапы под такт"
+      },
+      "status": "запланировано, не в MVP",
+      "interaction": "Движущиеся ноты → тап или клавиша в момент, когда нота пересекает линию отсечки.",
+      "difficultyParams": [
+        "bpm",
+        "noteDensity",
+        "patternComplexity",
+        "hitWindowMs",
+        "trackCount"
+      ],
+      "scoring": {
+        "primary": "hitAccuracy",
+        "secondary": [
+          "timingErrorMs",
+          "maxCombo",
+          "perfectRate"
+        ]
+      },
+      "staircaseCompatible": true,
+      "minClientVersion": "2.0.0",
+      "blockers": [
+        "Нужен Web Audio API с точным таймингом: setTimeout даёт джиттер 10–30 мс, а окно попадания ~50–100 мс. Тайминг надо вести от audioContext.currentTime, а не от таймера.",
+        "Нужны лицензионно чистые треки и формат beatmap.",
+        "Клавиатурный ввод конфликтует с Android-first: на телефоне физической клавиатуры нет. Нужен либо мобильный вариант (тапы по дорожкам), либо это отдельный десктопный режим.",
+        "Домен не определён: это скорость обработки, внимание или новый домен «тайминг и ритм»?"
+      ]
+    }
+  ],
+  "retired": [
+    {
+      "id": "motor_sequence",
+      "retiredIn": "2.0.0",
+      "reason": "Единственным пользователем было neurogym (№48), исключённое по научным основаниям — заявленный механизм «синхронизации полушарий» опровергнут (Spaulding et al. 2010), а выполнение невозможно проверить без камеры. Держать архетип про запас значит держать в клиенте мёртвый код, требующий камеры или акселерометра — самые тяжёлые разрешения, противоречащие принципу «минимум разрешений» из брифа.",
+      "ifReinstated": "Возврат упражнения потребует релиза приложения, а не обновления контента."
+    }
+  ]
+}

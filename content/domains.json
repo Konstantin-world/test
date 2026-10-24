@@ -1,78 +1,155 @@
 {
   "$schema": "../schema/domains.schema.json",
-  "version": "1.0.0",
+  "version": "2.0.0",
+  "changelog": {
+    "2.0.0": "Каталог расширен с 16 до 50 упражнений. Добавлен домен number_sense (Блок C — 10 упражнений, 20% каталога — не имел домена). Домены радар-диаграммы и таксономические теги РАЗДЕЛЕНЫ: ось радара должна оставаться читаемой (9 осей — предел), а классификация упражнений может быть сколь угодно дробной. Отклонение от раздела 3.1 брифа, где перечислено 8 осей без математики, — осознанное и задокументировано в docs/spec/open-questions.md №17.",
+    "1.0.0": "Исходные 8 доменов из брифа."
+  },
   "domains": [
     {
-      "id": "working_memory",
+      "id": "memory",
       "order": 1,
-      "name": { "ru": "Рабочая память" },
-      "lifeTask": { "ru": "Держать в голове несколько дел одновременно" },
-      "color": "#4F7CFF",
-      "weight": 1.0,
-      "onboardingAssessed": true
-    },
-    {
-      "id": "episodic_memory",
-      "order": 2,
-      "name": { "ru": "Эпизодическая память" },
-      "lifeTask": { "ru": "Не забывать имена, списки и события" },
+      "name": { "ru": "Память" },
+      "lifeTask": { "ru": "Не забывать имена, списки, события и удерживать несколько дел в голове" },
       "color": "#7C5CFF",
       "weight": 1.0,
-      "onboardingAssessed": false
+      "onboardingAssessed": true,
+      "radarAxis": true,
+      "note": "Объединяет рабочую, эпизодическую и зрительно-пространственную память в одну ось радара. Различение — через теги упражнений, а не через отдельные оси: пользователю «память» понятна как целое, а три оси сделали бы радар нечитаемым."
     },
     {
       "id": "attention",
-      "order": 3,
+      "order": 2,
       "name": { "ru": "Внимание и концентрация" },
       "lifeTask": { "ru": "Не отвлекаться и доводить начатое до конца" },
       "color": "#FF8A4F",
       "weight": 1.0,
-      "onboardingAssessed": true
+      "onboardingAssessed": true,
+      "radarAxis": true
     },
     {
       "id": "processing_speed",
-      "order": 4,
+      "order": 3,
       "name": { "ru": "Скорость обработки" },
       "lifeTask": { "ru": "Быстрее соображать и успевать" },
       "color": "#FF5C7A",
       "weight": 1.0,
-      "onboardingAssessed": true
+      "onboardingAssessed": true,
+      "radarAxis": true,
+      "note": "Самая сильная доказательная база переноса среди всех доменов (ACTIVE trial)."
+    },
+    {
+      "id": "spatial_reasoning",
+      "order": 4,
+      "name": { "ru": "Пространственное мышление" },
+      "lifeTask": { "ru": "Представлять, вращать и складывать объекты в уме" },
+      "color": "#3FA9F5",
+      "weight": 1.0,
+      "onboardingAssessed": true,
+      "radarAxis": true,
+      "note": "Новая ось в v2.0.0 — Блок A (10 упражнений). Тренируемость подтверждена (Uttal et al.), критична для STEM."
+    },
+    {
+      "id": "number_sense",
+      "order": 5,
+      "name": { "ru": "Число и математика" },
+      "lifeTask": { "ru": "Считать в уме, оценивать количества и видеть числовые закономерности" },
+      "color": "#00BFA5",
+      "weight": 1.0,
+      "onboardingAssessed": false,
+      "radarAxis": true,
+      "note": "Новая ось в v2.0.0. В разделе 3.1 брифа перечислено 8 осей без математики, но Блок C — это 10 упражнений (20% каталога). Распределить их по «логике» и «скорости» значило бы перегрузить эти оси и потерять отдельную метрику по тому, что пользователь явно тренирует."
     },
     {
       "id": "cognitive_flexibility",
-      "order": 5,
+      "order": 6,
       "name": { "ru": "Гибкость мышления" },
       "lifeTask": { "ru": "Легко переключаться и адаптироваться" },
       "color": "#2FBF9B",
       "weight": 1.0,
-      "onboardingAssessed": false
+      "onboardingAssessed": false,
+      "radarAxis": true
     },
     {
       "id": "logic",
-      "order": 6,
+      "order": 7,
       "name": { "ru": "Логика и рассуждение" },
       "lifeTask": { "ru": "Принимать взвешенные решения" },
-      "color": "#3FA9F5",
+      "color": "#4F7CFF",
       "weight": 1.0,
-      "onboardingAssessed": true
+      "onboardingAssessed": true,
+      "radarAxis": true
     },
     {
       "id": "language",
-      "order": 7,
+      "order": 8,
       "name": { "ru": "Язык и речь" },
       "lifeTask": { "ru": "Говорить и писать точнее" },
       "color": "#C0CA33",
       "weight": 1.0,
-      "onboardingAssessed": false
+      "onboardingAssessed": false,
+      "radarAxis": true
     },
     {
       "id": "creativity",
-      "order": 8,
+      "order": 9,
       "name": { "ru": "Креативность и решение проблем" },
       "lifeTask": { "ru": "Находить нестандартные выходы" },
       "color": "#E040FB",
       "weight": 1.0,
-      "onboardingAssessed": false
+      "onboardingAssessed": false,
+      "radarAxis": true
     }
-  ]
+  ],
+  "tagGroups": {
+    "memoryKind": {
+      "label": { "ru": "Вид памяти" },
+      "tags": {
+        "working": { "ru": "Рабочая" },
+        "episodic": { "ru": "Эпизодическая" },
+        "visuospatial": { "ru": "Зрительно-пространственная" },
+        "verbal": { "ru": "Слухо-речевая" },
+        "long-term": { "ru": "Долговременная" }
+      }
+    },
+    "paradigmFamily": {
+      "label": { "ru": "Семейство парадигм" },
+      "tags": {
+        "nback": { "ru": "N-back" },
+        "staircase-timing": { "ru": "Скоростные пробы с окном ответа" },
+        "visual-search": { "ru": "Зрительный поиск" },
+        "interference": { "ru": "Интерференция и подавление автоматизма" },
+        "task-switching": { "ru": "Переключение установок" },
+        "mental-rotation": { "ru": "Мысленное вращение" },
+        "mental-folding": { "ru": "Мысленное складывание" },
+        "constraint-satisfaction": { "ru": "Задачи с ограничениями" },
+        "insight": { "ru": "Инсайт и расфиксация" },
+        "divergent": { "ru": "Дивергентное мышление" },
+        "mnemonic": { "ru": "Мнемотехника" },
+        "number-sense": { "ru": "Чувство числа" },
+        "arithmetic-fluency": { "ru": "Арифметическая беглость" },
+        "lexical-access": { "ru": "Лексический доступ и беглость речи" },
+        "planning": { "ru": "Планирование последовательности" },
+        "motor": { "ru": "Моторная координация" }
+      }
+    },
+    "delivery": {
+      "label": { "ru": "Способ доставки" },
+      "tags": {
+        "offline-native": { "ru": "Работает офлайн, контент на устройстве" },
+        "needs-content-pack": { "ru": "Требует загружаемого контент-пака" },
+        "needs-authors": { "ru": "Требует авторского контента (тексты, задачи, картинки)" },
+        "needs-external-data": { "ru": "Требует внешней базы (словарь, шахматные задачи)" }
+      }
+    },
+    "risk": {
+      "label": { "ru": "Научный риск" },
+      "tags": {
+        "evidence-solid": { "ru": "Доказательная база крепкая" },
+        "evidence-mixed": { "ru": "Данные смешанные или ограничен перенос" },
+        "evidence-weak": { "ru": "Переноса практически нет — ценность в вовлечении" },
+        "claim-disputed": { "ru": "Заявленный механизм не подтверждён наукой — см. docs/spec/science-audit.md" }
+      }
+    }
+  }
 }
