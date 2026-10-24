@@ -20,14 +20,18 @@
 
 | Слой | Состояние |
 |---|---|
-| Каталог доменов (8) | ✅ [`content/domains.json`](content/domains.json) |
-| Каталог упражнений (12 MVP + 5) | ✅ [`content/exercises.json`](content/exercises.json) |
-| Адаптивный движок | ✅ [`docs/spec/adaptive-engine.md`](docs/spec/adaptive-engine.md) |
-| Открытые вопросы | ⚠️ [`docs/spec/open-questions.md`](docs/spec/open-questions.md) — 5 блокирующих |
-| Индекс ясности | ⚠️ формула предложена, ждёт утверждения |
-| Композитор сессии | ❌ не специфицирован |
-| Интервальное повторение | ❌ не специфицировано |
-| Клиент (Kotlin/Compose) | ❌ стек под вопросом, см. open-questions №5 |
+| Домены (9 осей радара + 4 группы тегов) | ✅ [`content/domains.json`](content/domains.json) v2.0.0 |
+| Архетипы взаимодействия (13) | ✅ [`content/archetypes.json`](content/archetypes.json) — платформа для роста каталога |
+| Каталог упражнений (60: 12 MVP + 47 + 1 к исключению) | ✅ [`content/exercises.json`](content/exercises.json) v2.0.0 |
+| Генератор каталога | ✅ [`tools/gen-catalog.py`](tools/gen-catalog.py) — источник правды |
+| Адаптивный движок | ✅ [`src/engine/staircase.js`](src/engine/staircase.js), [`docs/spec/adaptive-engine.md`](docs/spec/adaptive-engine.md) |
+| Индекс ясности | ✅ [`src/engine/clarity.js`](src/engine/clarity.js) — формула утверждена |
+| Композитор сессии | ✅ [`src/engine/session-composer.js`](src/engine/session-composer.js) |
+| Научный аудит 60 упражнений | ⚠️ [`docs/spec/science-audit.md`](docs/spec/science-audit.md) — 3 позиции нарушают заявленную честность |
+| Тесты ядра | ✅ 103 теста, `node:test`, ноль зависимостей |
+| Открытые вопросы | ⚠️ [`docs/spec/open-questions.md`](docs/spec/open-questions.md) — 22, из них 5 закрыты |
+| Клиент | ❌ выбран веб-прототип; Kotlin не собирается в среде агента |
+| Интервальное повторение (SM-2) | ❌ не реализовано, модель отличается от лестницы Левитта |
 
 ---
 
@@ -57,6 +61,29 @@ node tools/validate-content.mjs --report  # + таблица кривых сло
 сложности, наличие научного обоснования у каждого упражнения, а также продуктовые
 инварианты — квота MVP «10–12 упражнений» из дорожной карты, покрытие всех
 8 доменов, онбординг на 4 домена, собираемость короткой сессии.
+
+---
+
+## Каталог: 60 упражнений, 13 архетипов
+
+Каталог брифа (50 тренировок) сведён с базовым слоем раздела 1.7 (Шульте,
+классический Струп, task-switching) и каталогом v1.0.0 (судоку, анаграммы,
+«слова из слова», «10 способов использования», «Истории», RSVP). Дубликаты
+схлопнуты, пересечения помечены в `meta.duplicatesFlagged`.
+
+```
+по доменам    spatial_reasoning 13 · memory 12 · number_sense 9 · logic 8
+              attention 7 · creativity 4 · language 3 · cognitive_flexibility 2
+              processing_speed 1  ← перекос, см. open-questions №20
+по архетипам  single_choice 19 · stateful_board 11 · numeric_input 5
+              sequence_recall 5 · timed_field 5 · остальные ≤3
+по контенту   generated 48 · authored 8 · external 3
+доказательность  paradigmValidity A=31 B=22 C=6 · transferEvidence A=2 B=34 C=23
+```
+
+**Только два упражнения из 60 имеют доказанный перенос** (`transferEvidence = A`):
+`spaced_repetition` и `reaction_field`. Это не повод их скрывать — это и есть
+научная честность, заявленная как отличие от конкурентов.
 
 ---
 
