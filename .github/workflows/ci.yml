@@ -134,6 +134,21 @@ jobs:
           fi
           exit "$HITS"
 
+  unit-tests:
+    name: Engine unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # Зависимостей нет — package.json declares только node>=20.
+      # node --test встроен в Node 20, npm install не нужен и не запускается.
+      - name: Run engine tests
+        run: node --test tests/
+
   content-validation:
     name: Content catalog valid
     runs-on: ubuntu-latest
