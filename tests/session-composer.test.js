@@ -30,8 +30,9 @@ describe('blockSec', () => {
     assert.throws(() => blockSec({ durationSec: 120, trial: { blocksPerSession: 0 } }), RangeError);
   });
   test('совпадает с реальным каталогом', () => {
-    // dual_n_back: 180с / 3 блока = 60с — самое дешёвое в MVP
-    const dual = mvp.find((e) => e.id === 'dual_n_back');
+    // dual_nback: 180с / 3 блока = 60с — самое дешёвое в MVP
+    const dual = mvp.find((e) => e.id === 'dual_nback');
+    assert.ok(dual, "dual_nback исчез из MVP — id упражнения является стабильным контрактом");
     assert.equal(blockSec(dual), 60);
   });
 });

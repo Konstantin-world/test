@@ -8,6 +8,20 @@ import { clampIndex, interpParam, resolveParams, difficultyTable } from '../src/
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const catalog = JSON.parse(readFileSync(resolve(ROOT, 'content/exercises.json'), 'utf8')).exercises;
 
+/**
+ * id упражнения — СТАБИЛЬНЫЙ КОНТРАКТ: клиент хранит по нему прогресс
+ * пользователя, лестницу сложности и рекорды. Переименование после релиза
+ * молча обнулит статистику. Поэтому тест сначала проверяет наличие id и
+ * падает с внятным сообщением, а не с «Cannot read properties of undefined».
+ */
+function mustFind(id) {
+  const ex = catalog.find((e) => e.id === id);
+  assert.ok(ex, `упражнение '${id}' исчезло из каталога. id — стабильный контракт: ` +
+    `переименование обнулит прогресс пользователей. Если переименование необходимо, ` +
+    `добавьте поле renamedFrom и миграцию.`);
+  return ex;
+}
+
 describe('clampIndex', () => {
   test('зажимает в [0, 1]', () => {
     assert.equal(clampIndex(-5), 0);
@@ -96,7 +110,7 @@ describe('interpParam — ошибки', () => {
 
 describe('resolveParams', () => {
   test('возвращает все параметры упражнения', () => {
-    const ex = catalog.find((e) => e.id === 'dual_n_back');
+    const ex = mustFind('dual_nback');
     const p = resolveParams(ex, 0.5);
     assert.deepEqual(Object.keys(p).sort(), ex.difficulty.params.map((x) => x.key).sort());
     assert.equal(p.n, 3);            // 1 → 4, середина = 2.5 → round = 3
@@ -106,7 +120,7 @@ describe('resolveParams', () => {
   });
 
   test('d=0 даёт самый лёгкий профиль', () => {
-    const ex = catalog.find((e) => e.id === 'stroop_test');
+    const ex = mustFind('stroop_test');
     const p = resolveParams(ex, 0);
     for (const def of ex.difficulty.params) {
       const expected = def.type === 'enum' ? def.values[0] : def.at0;
@@ -115,7 +129,7 @@ describe('resolveParams', () => {
   });
 
   test('d=1 даёт самый тяжёлый профиль', () => {
-    const ex = catalog.find((e) => e.id === 'stroop_test');
+    const ex = mustFind('stroop_test');
     const p = resolveParams(ex, 1);
     for (const def of ex.difficulty.params) {
       const expected = def.type === 'enum' ? def.values[def.values.length - 1] : def.at1;
@@ -170,13 +184,13 @@ describe('инварианты по всему каталогу', () => {
 
 describe('difficultyTable', () => {
   test('строит таблицу для ревью', () => {
-    const ex = catalog.find((e) => e.id === 'dual_n_back');
+    const ex = mustFind('dual_nback');
     const t = difficultyTable(ex);
     assert.equal(t.length, ex.difficulty.params.length);
     assert.equal(t[0].at.length, 5); // точки по умолчанию
   });
   test('принимает свои точки', () => {
-    const ex = catalog.find((e) => e.id === 'dual_n_back');
+    const ex = mustFind('dual_nback');
     const t = difficultyTable(ex, [0, 1]);
     assert.equal(t[0].at.length, 2);
   });

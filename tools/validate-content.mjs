@@ -54,13 +54,31 @@ function loadJson(rel) {
 
 const domainsDoc = loadJson('content/domains.json');
 const exDoc = loadJson('content/exercises.json');
-if (!domainsDoc || !exDoc) {
+const archDoc = loadJson('content/archetypes.json');
+if (!domainsDoc || !exDoc || !archDoc) {
   console.error(C.red('Критическая ошибка чтения файлов.'));
   process.exit(1);
 }
 
 const domains = domainsDoc.domains ?? [];
-const exercises = exDoc.exercises ?? [];
+const allExercises = exDoc.exercises ?? [];
+const archetypes = archDoc.archetypes ?? [];
+
+// Упражнения со status=removed_pending_decision (напр. neurogym — заявленный
+// механизм опровергнут наукой) не участвуют в квотах MVP и покрытии доменов:
+// считать их «доступными» значит врать в отчёте.
+const REMOVED = 'removed_pending_decision';
+const removedEx = allExercises.filter((e) => e.status === REMOVED);
+const exercises = allExercises.filter((e) => e.status !== REMOVED);
+
+const archetypeIds = new Set([
+  ...archetypes.map((a) => a.id),
+  ...(archDoc.future ?? []).map((f) => f.id),
+]);
+const tagIds = new Set();
+for (const g of Object.values(domainsDoc.tagGroups ?? {})) {
+  for (const t of Object.keys(g.tags ?? {})) tagIds.add(t);
+}
 
 // ─── 1. домены ─────────────────────────────────────────────────────────────
 {
@@ -84,18 +102,30 @@ const exercises = exDoc.exercises ?? [];
     }
   }
 
-  const EXPECTED_DOMAINS = 8;
+  // v1.0.0 — 8 доменов из брифа. v2.0.0 — 9: добавлен number_sense, потому что
+  // Блок C (10 упражнений, 17% каталога) не имел домена вовсе.
+  const EXPECTED_DOMAINS = 9;
   if (domains.length !== EXPECTED_DOMAINS) {
-    err(`доменов ${domains.length}, по брифу должно быть ${EXPECTED_DOMAINS}`);
+    err(`доменов ${domains.length}, ожидается ${EXPECTED_DOMAINS}`);
   }
+  const radar = domains.filter((d) => d.radarAxis);
+  if (radar.length !== domains.length) {
+    warn(`${domains.length - radar.length} доменов не являются осями радара — проверить, намеренно ли`);
+  }
+  if (radar.length > 9) err(`осей радара ${radar.length} — диаграмма станет нечитаемой (предел 9)`);
   const orders = domains.map((d) => d.order).sort((a, b) => a - b);
   const contiguous = orders.every((o, i) => o === i + 1);
   if (!contiguous) err(`order доменов не сплошной 1..N: [${orders.join(', ')}]`);
 
   // онбординг по брифу: память, внимание, скорость, логика → 4 домена
   const onb = domains.filter((d) => d.onboardingAssessed).map((d) => d.id);
-  if (onb.length !== 4) {
-    err(`онбординг оценивает ${onb.length} доменов, по брифу (раздел 5) должно быть 4: [${onb.join(', ')}]`);
+  // Бриф (раздел 5) задаёт 4 домена при 8 осях. При 9 осях онбординг расширен до 5:
+  // spatial_reasoning — это 13 упражнений, и не измерить их на входе значит
+  // собирать сессию вслепую по самому большому домену.
+  if (onb.length < 3 || onb.length > 6) {
+    err(`онбординг оценивает ${onb.length} доменов — вне разумного диапазона 3–6 для теста на 5–7 минут: [${onb.join(', ')}]`);
+  } else if (onb.length !== 4) {
+    warn(`онбординг оценивает ${onb.length} доменов вместо 4 из брифа (раздел 5): [${onb.join(', ')}]. Отклонение осознанное, но задокументируйте.`);
   }
 }
 
@@ -119,6 +149,32 @@ for (const ex of exercises) {
     err(`exercise ${tag}: domain '${ex.domain}' не существует в domains.json`);
   }
   if (typeof ex.mvp !== 'boolean') err(`exercise ${tag}: mvp должен быть boolean`);
+  if (!archetypeIds.has(ex.archetype)) {
+    err(`exercise ${tag}: archetype '${ex.archetype}' не существует в archetypes.json`);
+  }
+  if (!Array.isArray(ex.tags) || ex.tags.length === 0) {
+    err(`exercise ${tag}: tags пусты — упражнение не найдётся фильтрами`);
+  } else {
+    for (const t of ex.tags) {
+      if (!t.includes(':')) err(`exercise ${tag}: тег '${t}' без группы (ожидается group:name)`);
+      else if (!tagIds.has(t.split(':')[1])) err(`exercise ${tag}: неизвестный тег '${t}'`);
+    }
+    if (!ex.tags.some((t) => t.startsWith('risk:'))) {
+      err(`exercise ${tag}: нет тега группы risk — научная позиция не классифицирована`);
+    }
+    if (!ex.tags.some((t) => t.startsWith('delivery:'))) {
+      err(`exercise ${tag}: нет тега группы delivery — непонятно, нужен ли авторский контент`);
+    }
+  }
+  if (!['generated', 'authored', 'external'].includes(ex.contentSource)) {
+    err(`exercise ${tag}: contentSource='${ex.contentSource}' вне {generated,authored,external}`);
+  }
+  if (typeof ex.no !== 'number') warn(`exercise ${tag}: нет номера из каталога брифа`);
+  // оценка D допустима только вместе с явной пометкой оспоримого заявления
+  if ((ex.science?.paradigmValidity === 'D' || ex.science?.transferEvidence === 'D')
+      && !ex.tags?.includes('risk:claim-disputed')) {
+    err(`exercise ${tag}: оценка D без тега risk:claim-disputed`);
+  }
   if (!ex.name?.ru) err(`exercise ${tag}: нет name.ru`);
   if (!ex.tagline?.ru) warn(`exercise ${tag}: нет tagline.ru`);
   if (!ex.description?.ru || ex.description.ru.length < 40) {
@@ -140,7 +196,10 @@ for (const ex of exercises) {
 
   // метрики и IO
   if (!Array.isArray(ex.metrics) || ex.metrics.length === 0) err(`exercise ${tag}: metrics пуст`);
-  if (!ex.metrics?.includes('level')) warn(`exercise ${tag}: metrics не содержит 'level' — адаптивный движок его ожидает`);
+  const noStaircase = ['card_review', 'motor_sequence'].includes(ex.archetype);
+  if (!ex.metrics?.includes('level') && !noStaircase) {
+    warn(`exercise ${tag}: metrics не содержит 'level' — адаптивный движок его ожидает`);
+  }
   if (!Array.isArray(ex.input) || ex.input.length === 0) err(`exercise ${tag}: input пуст`);
   if (typeof ex.requiresAudio !== 'boolean') err(`exercise ${tag}: requiresAudio должен быть boolean`);
   if (typeof ex.durationSec !== 'number' || ex.durationSec < 30 || ex.durationSec > 900) {
@@ -197,6 +256,10 @@ for (const ex of exercises) {
 
 // ─── 3. продуктовые инварианты ─────────────────────────────────────────────
 const mvp = exercises.filter((e) => e.mvp);
+// упражнения, исключённые из MVP-квот, но оставленные в каталоге как спорные
+if (removedEx.length) {
+  console.log(`  ${C.dim(`исключено из учёта: ${removedEx.map((e) => e.id).join(', ')} (status=${REMOVED})`)}`);
+}
 
 // дорожная карта: «MVP: 10–12 упражнений (по 1–2 на домен)»
 if (mvp.length < 10 || mvp.length > 12) {
@@ -272,7 +335,16 @@ if (WANT_REPORT) {
 // ─── 5. итог ───────────────────────────────────────────────────────────────
 console.log(C.bold('\n═══ Валидация контента ═══'));
 console.log(`  доменов:      ${domains.length}`);
-console.log(`  упражнений:   ${exercises.length} (${C.green(`MVP: ${mvp.length}`)}, later: ${exercises.length - mvp.length})`);
+console.log(`  упражнений:   ${exercises.length} активных + ${removedEx.length} к исключению (${C.green(`MVP: ${mvp.length}`)}, later: ${exercises.length - mvp.length - 0})`);
+console.log(`  архетипов:    ${archetypes.length} (+${(archDoc.future ?? []).length} запланировано)`);
+const bySrc = ['generated', 'authored', 'external'].map((k) => `${k}=${exercises.filter((e) => e.contentSource === k).length}`);
+console.log(`  контент:      ${C.dim(bySrc.join(' '))}`);
+const byArch = archetypes.map((a) => `${a.id}=${exercises.filter((e) => e.archetype === a.id).length}`);
+console.log(`  покрытие архетипами: ${C.dim(byArch.join(' '))}`);
+const unusedArch = archetypes.filter((a) => !exercises.some((e) => e.archetype === a.id)).map((a) => a.id);
+if (unusedArch.length) warn(`архетипы без упражнений: ${unusedArch.join(', ')} — мёртвый код в клиенте`);
+const teA = exercises.filter((e) => e.science.transferEvidence === 'A');
+console.log(`  transferEvidence=A: ${teA.map((e) => e.id).join(', ') || 'нет'} ${C.dim('(честно: перенос доказан у единиц)')}`);
 const byDomain = domains.map((d) => `${d.id}=${exercises.filter((e) => e.domain === d.id).length}`);
 console.log(`  покрытие:     ${C.dim(byDomain.join(' '))}`);
 console.log(`  параметры:    ${exercises.reduce((s, e) => s + (e.difficulty?.params?.length ?? 0), 0)} кривых сложности`);
