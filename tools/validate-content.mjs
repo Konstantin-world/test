@@ -19,6 +19,11 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  MIN_SESSION_SEC, WARMUP_SEC, REFLECTION_SEC, SESSION_PRESETS_SEC,
+  blockSec, composeSession,
+} from '../src/engine/session-composer.js';
+import { interpParam } from '../src/engine/difficulty.js';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, '..');
@@ -210,29 +215,33 @@ for (const d of domains) {
   if (n > 2) warn(`домен ${d.id}: ${n} упражнений в MVP (дорожная карта: 1–2)`);
 }
 
-// Бюджет сессии. По брифу (раздел 3):
-//   разминка 30–60с + основная часть (3–5 микро-игр) + рефлексия 30с
-// Проверяем, собираема ли самая короткая заявленная сессия — 3 минуты.
-const WARMUP_SEC = 60;      // берём верхнюю границу, консервативно
-const REFLECTION_SEC = 30;
-const SHORTEST_SESSION_SEC = 3 * 60;
-const MAIN_BUDGET_SEC = SHORTEST_SESSION_SEC - WARMUP_SEC - REFLECTION_SEC; // 90с
-const MICRO_GAMES_REQUIRED = 3;   // нижняя граница «3–5 микро-игр»
+// Бюджет сессии.
+//
+// Единственный источник правды — src/engine/session-composer.js. Раньше здесь
+// был свой хардкод «3 минуты», и он разошёлся с движком после продуктового
+// решения A+C (минимум 5 минут). Дублирование констант между валидатором
+// и рантаймом — это ровно тот класс багов, который CI не поймает.
+const MAIN_BUDGET_SEC = MIN_SESSION_SEC - WARMUP_SEC - REFLECTION_SEC;
 
-// Минимальная осмысленная порция упражнения — один блок.
-const blockSec = (e) => Math.round(e.durationSec / (e.trial?.blocksPerSession ?? 1));
-const cheapest = [...mvp].map((e) => ({ id: e.id, block: blockSec(e) })).sort((a, b) => a.block - b.block);
+const cheapest = [...mvp]
+  .map((e) => ({ id: e.id, block: blockSec(e) }))
+  .sort((a, b) => a.block - b.block);
+const minOne = cheapest[0]?.block ?? 0;
 
-if ((cheapest[0]?.block ?? Infinity) > MAIN_BUDGET_SEC) {
-  err(`Ни один блок MVP-упражнения (${cheapest[0]?.block}с) не влезает в основную часть 3-минутной сессии (${MAIN_BUDGET_SEC}с). Обещание «микро-сессии от 3 минут» невыполнимо — см. open-questions.md`);
-} else {
-  const threeCheapest = cheapest.slice(0, MICRO_GAMES_REQUIRED).reduce((s, c) => s + c.block, 0);
-  if (threeCheapest > MAIN_BUDGET_SEC) {
-    warn(`${MICRO_GAMES_REQUIRED} самых дешёвых блока = ${threeCheapest}с при бюджете ${MAIN_BUDGET_SEC}с. Бриф обещает «3–5 микро-игр» в основной части — в 3-минутную сессию помещается меньше. Нужно продуктовое решение (open-questions.md №1).`);
-  }
+if (minOne > MAIN_BUDGET_SEC) {
+  err(`Самый короткий блок MVP-упражнения (${minOne}с) не влезает в основную часть минимальной сессии (${MAIN_BUDGET_SEC}с). MIN_SESSION_SEC нужно поднять.`);
 }
 
-const minOne = cheapest[0]?.block ?? 0;
+// Реальная собираемость: композитор должен уметь собрать сессию на каждом пресете.
+for (const preset of SESSION_PRESETS_SEC) {
+  try {
+    const s = composeSession({ budgetSec: preset, catalog: mvp });
+    if (s.blocks.length === 0) err(`composeSession(${preset}) вернул 0 блоков`);
+    if (s.totalSec > preset) err(`composeSession(${preset}) превысил бюджет: ${s.totalSec}с`);
+  } catch (e) {
+    err(`composeSession(${preset})с упал: ${e.message}`);
+  }
+}
 
 // упражнения без openIssues при спорной научной базе
 for (const ex of exercises) {
@@ -242,11 +251,9 @@ for (const ex of exercises) {
 }
 
 // ─── 4. отчёт о кривых сложности ───────────────────────────────────────────
-function interp(p, d) {
-  if (p.type === 'enum') return p.values[Math.round(d * (p.values.length - 1))];
-  const v = p.at0 + (p.at1 - p.at0) * d;
-  return p.type === 'int' ? Math.round(v) : Math.round(v * 1000) / 1000;
-}
+// Используется interpParam из движка, а не локальная копия: расхождение в
+// один round() дало бы разную сложность в отчёте и в рантайме.
+const interp = interpParam;
 
 if (WANT_REPORT) {
   console.log(`\n${C.bold('Кривые сложности (d = 0 → 0.5 → 1)')}\n`);
@@ -270,7 +277,7 @@ const byDomain = domains.map((d) => `${d.id}=${exercises.filter((e) => e.domain 
 console.log(`  покрытие:     ${C.dim(byDomain.join(' '))}`);
 console.log(`  параметры:    ${exercises.reduce((s, e) => s + (e.difficulty?.params?.length ?? 0), 0)} кривых сложности`);
 console.log(`  открытые вопросы: ${exercises.reduce((s, e) => s + (e.openIssues?.length ?? 0), 0)} в упражнениях`);
-console.log(`  сессии:         ${SHORTEST_SESSION_SEC}с мин., основная часть ${MAIN_BUDGET_SEC}с`);
+console.log(`  сессии:         ${MIN_SESSION_SEC}с мин., основная часть ${MAIN_BUDGET_SEC}с`);
 console.log(`  cheapest block: ${cheapest[0]?.id} = ${cheapest[0]?.block}с`);
 
 if (warnings.length) {
