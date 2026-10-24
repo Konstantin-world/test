@@ -1,0 +1,16 @@
+{
+  "name": "mozg-na-maximum",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Мозг на максимум — русскоязычный когнитивный тренажёр",
+  "scripts": {
+    "test": "node --test tests/",
+    "validate": "node tools/validate-content.mjs",
+    "build": "node tools/build-prototype.mjs",
+    "serve": "node tools/serve.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
